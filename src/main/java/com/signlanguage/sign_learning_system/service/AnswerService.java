@@ -1,36 +1,18 @@
 package com.signlanguage.sign_learning_system.service;
 
 import com.signlanguage.sign_learning_system.model.Answer;
-import com.signlanguage.sign_learning_system.repository.AnswerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
-@Service
-public class AnswerService {
+public interface AnswerService {
+    Answer saveAnswer(Answer answer);
 
-    @Autowired
-    private AnswerRepository answerRepository;
+    List<Answer> getAllAnswers();
 
-    public Answer saveAnswer(Answer answer) {
-        return answerRepository.save(answer);
-    }
+    Optional<Answer> getAnswerById(Long id);
 
-    public List<Answer> getAllAnswers() {
-        return answerRepository.findAll();
-    }
+    List<Answer> getAnswersByQuestionId(Long questionId);
 
-    public Optional<Answer> getAnswerById(Long id) {
-        return answerRepository.findById(id);
-    }
-
-    public List<Answer> getAnswersByQuestionId(Long questionId) {
-        return answerRepository.findByQuestionId(questionId);
-    }
-
-    public void deleteAnswer(Long id) {
-        answerRepository.deleteById(id);
-    }
+    void deleteAnswer(Long id);
 }

@@ -17,4 +17,6 @@ public interface AssessmentService {
     boolean deleteAssessment(Long id);
 
     List<Assessment> getAssessmentsByLevel(String level);
+
+    List<Assessment> getAssessmentsForStudentLevel(Long studentId);
 }

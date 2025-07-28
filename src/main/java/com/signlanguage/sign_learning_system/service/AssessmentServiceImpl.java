@@ -1,7 +1,9 @@
 package com.signlanguage.sign_learning_system.service;
 
 import com.signlanguage.sign_learning_system.model.Assessment;
+import com.signlanguage.sign_learning_system.model.User;
 import com.signlanguage.sign_learning_system.repository.AssessmentRepository;
+import com.signlanguage.sign_learning_system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,12 +13,11 @@ import java.util.Optional;
 @Service
 public class AssessmentServiceImpl implements AssessmentService {
 
-    private final AssessmentRepository assessmentRepository;
+    @Autowired
+    private AssessmentRepository assessmentRepository;
 
     @Autowired
-    public AssessmentServiceImpl(AssessmentRepository assessmentRepository) {
-        this.assessmentRepository = assessmentRepository;
-    }
+    private UserRepository userRepository;
 
     @Override
     public Assessment saveAssessment(Assessment assessment) {
@@ -34,27 +35,37 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
-    public Optional<Assessment> updateAssessment(Long id, Assessment updatedAssessment) {
+    public Optional<Assessment> updateAssessment(Long id, Assessment assessment) {
         return assessmentRepository.findById(id).map(existing -> {
-            existing.setTitle(updatedAssessment.getTitle());
-            existing.setDescription(updatedAssessment.getDescription());
-            existing.setLevel(updatedAssessment.getLevel());
-            existing.setDate(updatedAssessment.getDate());
+            existing.setTitle(assessment.getTitle());
+            existing.setDescription(assessment.getDescription());
+            existing.setLevel(assessment.getLevel());
+            existing.setDate(assessment.getDate());
             return assessmentRepository.save(existing);
         });
     }
 
     @Override
     public boolean deleteAssessment(Long id) {
-        if (assessmentRepository.existsById(id)) {
-            assessmentRepository.deleteById(id);
+        return assessmentRepository.findById(id).map(assessment -> {
+            assessmentRepository.delete(assessment);
             return true;
-        }
-        return false;
+        }).orElse(false);
     }
 
     @Override
     public List<Assessment> getAssessmentsByLevel(String level) {
+        return assessmentRepository.findByLevel(level);
+    }
+
+    @Override
+    public List<Assessment> getAssessmentsForStudentLevel(Long studentId) {
+        Optional<User> userOpt = userRepository.findById(studentId);
+        if (userOpt.isEmpty()) {
+            return List.of(); // empty list
+        }
+
+        String level = userOpt.get().getLevel();
         return assessmentRepository.findByLevel(level);
     }
 }

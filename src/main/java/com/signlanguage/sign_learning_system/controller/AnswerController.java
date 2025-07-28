@@ -9,7 +9,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/answers")
-@CrossOrigin(origins = "*") // Ruhusu frontend kama Flutter kufikia
 public class AnswerController {
 
     @Autowired

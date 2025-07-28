@@ -1,5 +1,6 @@
 package com.signlanguage.sign_learning_system.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -18,6 +19,7 @@ public class Answer {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
+    @JsonBackReference
     private Question question;
 
     public Answer() {}
@@ -28,7 +30,6 @@ public class Answer {
         this.question = question;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface AssessmentRepository extends JpaRepository<Assessment, Long> {
-    List<Assessment> findByLevel(String level); // hii ndio custom query
+    List<Assessment> findByLevel(String level);
 }

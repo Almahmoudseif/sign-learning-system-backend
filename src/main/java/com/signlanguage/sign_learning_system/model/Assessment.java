@@ -1,10 +1,12 @@
 package com.signlanguage.sign_learning_system.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
-public class  Assessment {
+public class Assessment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,45 +17,29 @@ public class  Assessment {
     private String level;
     private LocalDate date;
 
-    // ==== Getters and Setters ====
+    @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Question> questions;
 
-    public Long getId() {
-        return id;
-    }
+    public Assessment() {}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // Getters and Setters
 
-    public String getTitle() {
-        return title;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public String getLevel() { return level; }
+    public void setLevel(String level) { this.level = level; }
 
-    public String getLevel() {
-        return level;
-    }
+    public LocalDate getDate() { return date; }
+    public void setDate(LocalDate date) { this.date = date; }
 
-    public void setLevel(String level) {
-        this.level = level;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
+    public List<Question> getQuestions() { return questions; }
+    public void setQuestions(List<Question> questions) { this.questions = questions; }
 }

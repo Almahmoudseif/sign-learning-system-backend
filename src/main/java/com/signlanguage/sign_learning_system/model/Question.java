@@ -1,6 +1,7 @@
 package com.signlanguage.sign_learning_system.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.util.List;
 
 @Entity
@@ -22,6 +23,7 @@ public class Question {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assessment_id", nullable = false)
+    @JsonBackReference
     private Assessment assessment;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -36,7 +38,7 @@ public class Question {
         this.assessment = assessment;
     }
 
-    // Getters na Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

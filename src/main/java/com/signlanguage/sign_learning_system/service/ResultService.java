@@ -35,11 +35,7 @@ public class ResultService {
     }
 
     public Optional<Result> getResultByStudentAndAssessment(Long studentId, Long assessmentId) {
-        List<Result> results = resultRepository.findByStudentIdAndAssessmentId(studentId, assessmentId);
-        if (results.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(results.get(0)); // assume only one result per student per assessment
+        return resultRepository.findByStudentIdAndAssessmentId(studentId, assessmentId);
     }
 
     public void deleteResult(Long id) {

@@ -5,7 +5,9 @@ import com.signlanguage.sign_learning_system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class UserService {
@@ -13,13 +15,14 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Sajili user mpya au update kama ipo
     public User registerUser(User user) {
-        // Hapa unaweza kuongeza validation kama email au reg number imetumika
+        if (user.getLevel() == null || user.getLevel().trim().isEmpty()) {
+            user.setLevel("Beginner");  // Set default level here
+        }
+        user.setRegistrationNumber(generateRegistrationNumber());
         return userRepository.save(user);
     }
 
-    // Login: Rudisha user kama registrationNumber na password vinaendana
     public User loginUser(String registrationNumber, String password) {
         User user = userRepository.findByRegistrationNumber(registrationNumber);
         if (user != null && user.getPassword().equals(password)) {
@@ -28,23 +31,63 @@ public class UserService {
         return null;
     }
 
-    // Rudisha users wote
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    // Rudisha user kwa ID
+    public List<User> getUsersByRole(String role) {
+        return userRepository.findByRole(role);
+    }
+
+    public List<User> getAllStudents() {
+        return userRepository.findByRole("student");
+    }
+
     public User getUserById(Long id) {
         return userRepository.findById(id).orElse(null);
     }
 
-    // Futa user kwa ID
     public void deleteUserById(Long id) {
         userRepository.deleteById(id);
     }
 
-    // Rudisha user kwa registration number
     public User getUserByRegistrationNumber(String regNumber) {
         return userRepository.findByRegistrationNumber(regNumber);
+    }
+
+    public User updateUser(Long id, User updatedUser) {
+        User existingUser = getUserById(id);
+        if (existingUser != null) {
+            existingUser.setFullName(updatedUser.getFullName());
+            existingUser.setEmail(updatedUser.getEmail());
+            existingUser.setPassword(updatedUser.getPassword());
+            existingUser.setRole(updatedUser.getRole());
+            existingUser.setLevel(updatedUser.getLevel());
+            return userRepository.save(existingUser);
+        }
+        return null;
+    }
+
+    public List<User> assignLevelToStudentsWithoutLevel(String defaultLevel) {
+        List<User> students = userRepository.findByRole("student");
+        List<User> updated = new ArrayList<>();
+
+        for (User user : students) {
+            if (user.getLevel() == null || user.getLevel().trim().isEmpty()) {
+                user.setLevel(defaultLevel);
+                updated.add(userRepository.save(user));
+            }
+        }
+
+        return updated;
+    }
+
+    private String generateRegistrationNumber() {
+        Random random = new Random();
+        String reg;
+        do {
+            reg = "SL-" + (1000 + random.nextInt(9000));
+        } while (userRepository.findByRegistrationNumber(reg) != null);
+        return reg;
     }
 }
