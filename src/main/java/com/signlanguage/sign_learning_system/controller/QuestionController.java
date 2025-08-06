@@ -2,12 +2,13 @@ package com.signlanguage.sign_learning_system.controller;
 
 import com.signlanguage.sign_learning_system.DTO.QuestionRequest;
 import com.signlanguage.sign_learning_system.model.Assessment;
-import com.signlanguage.sign_learning_system.model.Question;
 import com.signlanguage.sign_learning_system.model.Answer;
+import com.signlanguage.sign_learning_system.model.Question;
+import com.signlanguage.sign_learning_system.repository.AnswerRepository;
 import com.signlanguage.sign_learning_system.repository.AssessmentRepository;
 import com.signlanguage.sign_learning_system.service.QuestionService;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -17,64 +18,83 @@ import java.util.List;
 @RequestMapping("/api/questions")
 public class QuestionController {
 
-    @Autowired
-    private QuestionService questionService;
+    private final QuestionService questionService;
+    private final AssessmentRepository assessmentRepository;
+    private final AnswerRepository answerRepository;
 
     @Autowired
-    private AssessmentRepository assessmentRepository;
+    public QuestionController(
+            QuestionService questionService,
+            AssessmentRepository assessmentRepository,
+            AnswerRepository answerRepository
+    ) {
+        this.questionService = questionService;
+        this.assessmentRepository = assessmentRepository;
+        this.answerRepository = answerRepository;
+    }
 
-    // ✅ Create question with answers from DTO
     @PostMapping
-    public Question createQuestion(@RequestBody QuestionRequest questionRequest) {
-        Assessment assessment = assessmentRepository.findById(questionRequest.getAssessmentId())
-                .orElseThrow(() -> new RuntimeException("Assessment not found with id: " + questionRequest.getAssessmentId()));
+    public ResponseEntity<Question> createQuestion(@RequestBody QuestionRequest request) {
+        Assessment assessment = assessmentRepository.findById(request.getAssessmentId())
+                .orElseThrow(() -> new RuntimeException("Assessment not found"));
 
         Question question = new Question();
-        question.setContent(questionRequest.getContent());
-        question.setImageUrl(questionRequest.getImageUrl());
-        question.setVideoUrl(questionRequest.getVideoUrl());
+        question.setContent(request.getContent());
+        question.setImageUrl(request.getImageUrl());
+        question.setVideoUrl(request.getVideoUrl());
         question.setAssessment(assessment);
 
-        // Handle answers
-        List<Answer> answers = new ArrayList<>();
-        if (questionRequest.getAnswers() != null) {
-            for (var answerRequest : questionRequest.getAnswers()) {
+        // Save question kwanza
+        Question savedQuestion = questionService.saveQuestion(question);
+
+        // Save answers
+        List<Answer> answerList = new ArrayList<>();
+        if (request.getAnswers() != null) {
+            for (QuestionRequest.AnswerRequest answerReq : request.getAnswers()) {
                 Answer answer = new Answer();
-                answer.setContent(answerRequest.getContent());
-                answer.setCorrect(answerRequest.isCorrect());
-                answer.setQuestion(question);
-                answers.add(answer);
+                answer.setContent(answerReq.getContent());
+                answer.setCorrect(answerReq.isCorrect());
+                answer.setQuestion(savedQuestion);
+                answerRepository.save(answer);
+                answerList.add(answer);
             }
         }
 
-        question.setAnswers(answers);
+        // Set answers kwenye question na return
+        savedQuestion.setAnswers(answerList);
 
-        return questionService.saveQuestion(question);
+        return ResponseEntity.ok(savedQuestion);
     }
 
-    // ✅ Get all questions
     @GetMapping
-    public List<Question> getAllQuestions() {
-        return questionService.getAllQuestions();
+    public ResponseEntity<List<Question>> getAllQuestions() {
+        return ResponseEntity.ok(questionService.getAllQuestions());
     }
 
-    // ✅ Get question by ID
     @GetMapping("/{id}")
-    public Question getQuestionById(@PathVariable Long id) {
+    public ResponseEntity<Question> getQuestionById(@PathVariable Long id) {
         return questionService.getQuestionById(id)
-                .orElseThrow(() -> new RuntimeException("Question not found with id: " + id));
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // ✅ Get questions by assessment ID
     @GetMapping("/assessment/{assessmentId}")
-    public List<Question> getQuestionsByAssessment(@PathVariable Long assessmentId) {
-        return questionService.getQuestionsByAssessmentId(assessmentId);
+    public ResponseEntity<List<Question>> getQuestionsByAssessment(@PathVariable Long assessmentId) {
+        return ResponseEntity.ok(questionService.getQuestionsByAssessmentId(assessmentId));
     }
 
-    // ✅ Delete question
+    @PutMapping("/{id}")
+    public ResponseEntity<Question> updateQuestion(@PathVariable Long id, @RequestBody Question question) {
+        return questionService.updateQuestion(id, question)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
-    public String deleteQuestion(@PathVariable Long id) {
-        questionService.deleteQuestion(id);
-        return "Question deleted successfully.";
+    public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
+        if (questionService.deleteQuestion(id)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

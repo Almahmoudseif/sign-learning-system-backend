@@ -30,15 +30,35 @@ public class Answer {
         this.question = question;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public boolean isCorrect() { return isCorrect; }
-    public void setCorrect(boolean isCorrect) { this.isCorrect = isCorrect; }
+    public String getContent() {
+        return content;
+    }
 
-    public Question getQuestion() { return question; }
-    public void setQuestion(Question question) { this.question = question; }
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public boolean isCorrect() {
+        return isCorrect;
+    }
+
+    public void setCorrect(boolean correct) {
+        this.isCorrect = correct;
+    }
+
+    public Question getQuestion() {
+        return question;
+    }
+
+    public void setQuestion(Question question) {
+        this.question = question;
+    }
 }

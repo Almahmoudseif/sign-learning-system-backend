@@ -8,9 +8,7 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
-    User findByRegistrationNumber(String registrationNumber);
+    Optional<User> findByRegistrationNumber(String registrationNumber);
     List<User> findByRole(String role);
-
-    // ✅ Hii hapa ndio mpya kwa login yetu ya student
     Optional<User> findByFullNameAndRegistrationNumber(String fullName, String registrationNumber);
 }

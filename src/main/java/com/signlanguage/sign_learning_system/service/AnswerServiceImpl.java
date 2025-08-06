@@ -35,7 +35,16 @@ public class AnswerServiceImpl implements AnswerService {
     }
 
     @Override
-    public void deleteAnswer(Long id) {
-        answerRepository.deleteById(id);
+    public List<Answer> getAnswersByAssessmentId(Long assessmentId) {
+        return answerRepository.findByQuestion_Assessment_Id(assessmentId);
+    }
+
+    @Override
+    public boolean deleteAnswer(Long id) {
+        if (answerRepository.existsById(id)) {
+            answerRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }

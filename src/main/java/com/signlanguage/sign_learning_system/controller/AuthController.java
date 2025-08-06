@@ -8,6 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -17,13 +21,17 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Tafuta user kwa registration number
-        User user = userRepository.findByRegistrationNumber(loginRequest.getRegistrationNumber());
+        Optional<User> optionalUser = userRepository.findByRegistrationNumber(loginRequest.getRegistrationNumber());
 
-        if (user != null) {
-            // Linga jina la user
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
             if (user.getFullName().equalsIgnoreCase(loginRequest.getFullName())) {
-                return ResponseEntity.ok(user);
+                Map<String, Object> response = new HashMap<>();
+                response.put("registrationNumber", user.getRegistrationNumber());
+                response.put("fullName", user.getFullName());
+                response.put("role", user.getRole());
+                response.put("id", user.getId());
+                return ResponseEntity.ok(response);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Wrong name");
             }

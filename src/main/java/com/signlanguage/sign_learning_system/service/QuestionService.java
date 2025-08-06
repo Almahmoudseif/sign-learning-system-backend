@@ -10,5 +10,6 @@ public interface QuestionService {
     List<Question> getAllQuestions();
     Optional<Question> getQuestionById(Long id);
     List<Question> getQuestionsByAssessmentId(Long assessmentId);
-    void deleteQuestion(Long id);
+    Optional<Question> updateQuestion(Long id, Question question);
+    boolean deleteQuestion(Long id);
 }

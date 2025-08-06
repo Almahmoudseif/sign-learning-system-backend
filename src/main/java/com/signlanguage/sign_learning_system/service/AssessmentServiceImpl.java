@@ -1,14 +1,12 @@
 package com.signlanguage.sign_learning_system.service;
 
-import com.signlanguage.sign_learning_system.model.Assessment;
-import com.signlanguage.sign_learning_system.model.User;
-import com.signlanguage.sign_learning_system.repository.AssessmentRepository;
-import com.signlanguage.sign_learning_system.repository.UserRepository;
+import com.signlanguage.sign_learning_system.enums.LessonLevel;
+import com.signlanguage.sign_learning_system.model.*;
+import com.signlanguage.sign_learning_system.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class AssessmentServiceImpl implements AssessmentService {
@@ -19,8 +17,31 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private QuestionRepository questionRepository;
+
+    @Autowired
+    private AnswerRepository answerRepository;
+
     @Override
     public Assessment saveAssessment(Assessment assessment) {
+        if (assessment == null || assessment.getTitle() == null || assessment.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Assessment title is required.");
+        }
+
+        if (assessment.getQuestions() != null) {
+            for (Question q : assessment.getQuestions()) {
+                q.setAssessment(assessment);
+
+                // Hakikisha answers zote zina reference kwa question
+                if (q.getAnswers() != null) {
+                    for (Answer a : q.getAnswers()) {
+                        a.setQuestion(q);
+                    }
+                }
+            }
+        }
+
         return assessmentRepository.save(assessment);
     }
 
@@ -35,12 +56,12 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
-    public Optional<Assessment> updateAssessment(Long id, Assessment assessment) {
+    public Optional<Assessment> updateAssessment(Long id, Assessment updatedAssessment) {
         return assessmentRepository.findById(id).map(existing -> {
-            existing.setTitle(assessment.getTitle());
-            existing.setDescription(assessment.getDescription());
-            existing.setLevel(assessment.getLevel());
-            existing.setDate(assessment.getDate());
+            existing.setTitle(updatedAssessment.getTitle());
+            existing.setDescription(updatedAssessment.getDescription());
+            existing.setLevel(updatedAssessment.getLevel());
+            existing.setDate(updatedAssessment.getDate());
             return assessmentRepository.save(existing);
         });
     }
@@ -54,18 +75,72 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
-    public List<Assessment> getAssessmentsByLevel(String level) {
+    public List<Assessment> getAssessmentsByLevel(LessonLevel level) {
         return assessmentRepository.findByLevel(level);
     }
 
     @Override
     public List<Assessment> getAssessmentsForStudentLevel(Long studentId) {
-        Optional<User> userOpt = userRepository.findById(studentId);
-        if (userOpt.isEmpty()) {
-            return List.of(); // empty list
+        Optional<User> studentOpt = userRepository.findById(studentId);
+        if (studentOpt.isEmpty()) {
+            return List.of();
         }
 
-        String level = userOpt.get().getLevel();
+        LessonLevel level = studentOpt.get().getLevel();
         return assessmentRepository.findByLevel(level);
+    }
+
+    @Override
+    public boolean evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers) {
+        Optional<User> studentOpt = userRepository.findById(studentId);
+        Optional<Assessment> assessmentOpt = assessmentRepository.findById(assessmentId);
+
+        if (studentOpt.isEmpty() || assessmentOpt.isEmpty()) {
+            return false;
+        }
+
+        List<Question> questions = questionRepository.findByAssessmentId(assessmentId);
+        if (questions.isEmpty()) {
+            return false;
+        }
+
+        int total = questions.size();
+        int correct = 0;
+
+        for (Question question : questions) {
+            String submittedAnswer = answers.get(question.getId());
+            Optional<Answer> correctAnswer = answerRepository.findByQuestionIdAndIsCorrectTrue(question.getId());
+
+            if (correctAnswer.isPresent() &&
+                    correctAnswer.get().getContent().equalsIgnoreCase(submittedAnswer)) {
+                correct++;
+            }
+        }
+
+        double score = ((double) correct / total) * 100;
+
+        if (score >= 50.0) {
+            User student = studentOpt.get();
+            LessonLevel currentLevel = student.getLevel();
+
+            LessonLevel nextLevel = getNextLevel(currentLevel);
+            student.setLevel(nextLevel);
+
+            userRepository.save(student);
+            return true;
+        }
+
+        return false;
+    }
+
+    private LessonLevel getNextLevel(LessonLevel currentLevel) {
+        if (currentLevel == null) {
+            return LessonLevel.BEGINNER;
+        }
+        return switch (currentLevel) {
+            case BEGINNER -> LessonLevel.INTERMEDIATE;
+            case INTERMEDIATE -> LessonLevel.ADVANCED;
+            case ADVANCED -> LessonLevel.ADVANCED;
+        };
     }
 }

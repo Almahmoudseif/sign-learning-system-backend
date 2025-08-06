@@ -1,6 +1,7 @@
 package com.signlanguage.sign_learning_system.model;
 
 import jakarta.persistence.*;
+import com.signlanguage.sign_learning_system.enums.LessonLevel;
 
 @Entity
 @Table(name = "users")
@@ -11,14 +12,21 @@ public class User {
     private Long id;
 
     private String fullName;
+
+    @Column(unique = true)
     private String email;
+
+    @Column(unique = true)
     private String registrationNumber;
+
     private String password;
     private String role;
 
-    private String level; // ✅ added field for assessment filtering
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private LessonLevel level;
 
-    // Getters & Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -37,6 +45,6 @@ public class User {
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 
-    public String getLevel() { return level; }           // ✅ getter
-    public void setLevel(String level) { this.level = level; } // ✅ setter
+    public LessonLevel getLevel() { return level; }
+    public void setLevel(LessonLevel level) { this.level = level; }
 }

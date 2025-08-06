@@ -1,8 +1,10 @@
 package com.signlanguage.sign_learning_system.service;
 
+import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import com.signlanguage.sign_learning_system.model.Assessment;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AssessmentService {
@@ -16,7 +18,9 @@ public interface AssessmentService {
 
     boolean deleteAssessment(Long id);
 
-    List<Assessment> getAssessmentsByLevel(String level);
+    List<Assessment> getAssessmentsByLevel(LessonLevel level);
 
     List<Assessment> getAssessmentsForStudentLevel(Long studentId);
+
+    boolean evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers);
 }

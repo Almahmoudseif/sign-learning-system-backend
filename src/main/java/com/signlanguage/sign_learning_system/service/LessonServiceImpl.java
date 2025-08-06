@@ -26,8 +26,8 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
-    public Optional<Lesson> getLessonById(Long id) {
-        return lessonRepository.findById(id);
+    public Lesson getLessonById(Long id) {
+        return lessonRepository.findById(id).orElse(null);
     }
 
     @Override
@@ -36,7 +36,41 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
-    public void deleteLesson(Long id) {
-        lessonRepository.deleteById(id);
+    public boolean deleteLesson(Long id) {
+        Optional<Lesson> lessonOpt = lessonRepository.findById(id);
+        if (lessonOpt.isPresent()) {
+            lessonRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Lesson updateLessonImage(Long id, String imageUrl) {
+        return lessonRepository.findById(id)
+                .map(lesson -> {
+                    lesson.setImageUrl(imageUrl);
+                    return lessonRepository.save(lesson);
+                }).orElse(null);
+    }
+
+    @Override
+    public List<Lesson> getVideoLessonsOnly() {
+        return lessonRepository.findByVideoUrlIsNotNullAndImageUrlIsNull();
+    }
+
+    @Override
+    public List<Lesson> findByLevel(LessonLevel level) {
+        return lessonRepository.findByLevel(level);
+    }
+
+    @Override
+    public List<Lesson> getLessonsByTeacherId(Long teacherId) {
+        return lessonRepository.findByTeacherId(teacherId);
+    }
+
+    @Override
+    public List<Lesson> getLessonsByLevelAndTeacherId(LessonLevel level, Long teacherId) {
+        return lessonRepository.findByLevelAndTeacherId(level, teacherId);
     }
 }
