@@ -1,5 +1,6 @@
 package com.signlanguage.sign_learning_system.service;
 
+import com.signlanguage.sign_learning_system.DTO.AssessmentResultResponse;
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import com.signlanguage.sign_learning_system.model.*;
 import com.signlanguage.sign_learning_system.repository.*;
@@ -33,7 +34,6 @@ public class AssessmentServiceImpl implements AssessmentService {
             for (Question q : assessment.getQuestions()) {
                 q.setAssessment(assessment);
 
-                // Hakikisha answers zote zina reference kwa question
                 if (q.getAnswers() != null) {
                     for (Answer a : q.getAnswers()) {
                         a.setQuestion(q);
@@ -85,52 +85,84 @@ public class AssessmentServiceImpl implements AssessmentService {
         if (studentOpt.isEmpty()) {
             return List.of();
         }
-
         LessonLevel level = studentOpt.get().getLevel();
         return assessmentRepository.findByLevel(level);
     }
 
     @Override
-    public boolean evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers) {
+    public AssessmentResultResponse evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers, boolean promote) {
         Optional<User> studentOpt = userRepository.findById(studentId);
         Optional<Assessment> assessmentOpt = assessmentRepository.findById(assessmentId);
 
         if (studentOpt.isEmpty() || assessmentOpt.isEmpty()) {
-            return false;
+            return new AssessmentResultResponse("Assessment au mwanafunzi hakupatikana", 0, false);
         }
 
         List<Question> questions = questionRepository.findByAssessmentId(assessmentId);
         if (questions.isEmpty()) {
-            return false;
+            return new AssessmentResultResponse("Hakuna maswali kwenye assessment hii", 0, false);
         }
 
-        int total = questions.size();
-        int correct = 0;
-
-        for (Question question : questions) {
-            String submittedAnswer = answers.get(question.getId());
-            Optional<Answer> correctAnswer = answerRepository.findByQuestionIdAndIsCorrectTrue(question.getId());
-
-            if (correctAnswer.isPresent() &&
-                    correctAnswer.get().getContent().equalsIgnoreCase(submittedAnswer)) {
-                correct++;
+        // Hakikisha kila question ina jibu moja tu sahihi
+        for (Question q : questions) {
+            long correctCount = q.getAnswers().stream().filter(Answer::isCorrect).count();
+            if (correctCount != 1) {
+                return new AssessmentResultResponse("Swali '" + q.getContent() + "' linapaswa kuwa na jibu moja tu sahihi.", 0, false);
             }
         }
 
-        double score = ((double) correct / total) * 100;
+        int totalQuestions = questions.size();
+        int correctAnswers = 0;
 
-        if (score >= 50.0) {
-            User student = studentOpt.get();
-            LessonLevel currentLevel = student.getLevel();
+        for (Question question : questions) {
+            String submittedAnswerIdStr = answers.get(question.getId());
+            if (submittedAnswerIdStr == null) {
+                return new AssessmentResultResponse("Tafadhali jibu swali: " + question.getContent(), (int) (((double) correctAnswers / totalQuestions) * 100), false);
+            }
+            Long submittedAnswerId;
+            try {
+                submittedAnswerId = Long.parseLong(submittedAnswerIdStr);
+            } catch (NumberFormatException e) {
+                return new AssessmentResultResponse("Jibu la swali '" + question.getContent() + "' halieleweki", (int) (((double) correctAnswers / totalQuestions) * 100), false);
+            }
 
-            LessonLevel nextLevel = getNextLevel(currentLevel);
-            student.setLevel(nextLevel);
+            Optional<Answer> correctAnswerOpt = answerRepository.findByQuestionIdAndIsCorrectTrue(question.getId());
 
-            userRepository.save(student);
-            return true;
+            if (correctAnswerOpt.isEmpty()) {
+                return new AssessmentResultResponse("Hakuna jibu sahihi limewekwa kwa swali: " + question.getContent(), (int) (((double) correctAnswers / totalQuestions) * 100), false);
+            }
+
+            if (correctAnswerOpt.get().getId().equals(submittedAnswerId)) {
+                correctAnswers++;
+            } else {
+                return new AssessmentResultResponse(
+                        "Samahani, hujafaulu. Jaribu tena.",
+                        (int) (((double) correctAnswers / totalQuestions) * 100),
+                        false
+                );
+            }
         }
 
-        return false;
+        // Ikiwa umefika hapa, maana majibu yote ni sahihi
+        double scorePercentage = 100;
+        boolean passed = true;
+
+        if (passed && promote) {
+            promoteStudentToNextLevel(studentOpt.get());
+        }
+
+        return new AssessmentResultResponse(
+                "Hongera! Umeshinda na umehamishiwa daraja jingine.",
+                (int) scorePercentage,
+                true
+        );
+    }
+
+    private void promoteStudentToNextLevel(User student) {
+        LessonLevel currentLevel = student.getLevel();
+        LessonLevel nextLevel = getNextLevel(currentLevel);
+        student.setLevel(nextLevel);
+        userRepository.save(student);
     }
 
     private LessonLevel getNextLevel(LessonLevel currentLevel) {

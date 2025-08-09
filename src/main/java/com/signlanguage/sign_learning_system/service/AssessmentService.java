@@ -1,5 +1,6 @@
 package com.signlanguage.sign_learning_system.service;
 
+import com.signlanguage.sign_learning_system.DTO.AssessmentResultResponse;
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import com.signlanguage.sign_learning_system.model.Assessment;
 
@@ -22,5 +23,5 @@ public interface AssessmentService {
 
     List<Assessment> getAssessmentsForStudentLevel(Long studentId);
 
-    boolean evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers);
+    AssessmentResultResponse evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers, boolean promote);
 }

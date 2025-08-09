@@ -1,6 +1,7 @@
 package com.signlanguage.sign_learning_system.controller;
 
 import com.signlanguage.sign_learning_system.DTO.AssessmentSubmissionRequest;
+import com.signlanguage.sign_learning_system.DTO.AssessmentResultResponse;
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import com.signlanguage.sign_learning_system.model.Assessment;
 import com.signlanguage.sign_learning_system.service.AssessmentService;
@@ -33,7 +34,7 @@ public class AssessmentController {
     // Get all assessments
     @GetMapping
     public List<Assessment> getAllAssessments() {
-        return assessmentService.getAllAssessments();  // Hii inatakiwa iwepo kwenye service
+        return assessmentService.getAllAssessments();
     }
 
     // Get a single assessment by ID
@@ -86,17 +87,13 @@ public class AssessmentController {
 
     // Submit assessment answers and auto-evaluate
     @PostMapping("/submit")
-    public ResponseEntity<String> submitAssessment(@RequestBody AssessmentSubmissionRequest submissionRequest) {
-        boolean passed = assessmentService.evaluateAndPromoteStudent(
+    public ResponseEntity<AssessmentResultResponse> submitAssessment(@RequestBody AssessmentSubmissionRequest submissionRequest) {
+        AssessmentResultResponse result = assessmentService.evaluateAndPromoteStudent(
                 submissionRequest.getStudentId(),
                 submissionRequest.getAssessmentId(),
-                submissionRequest.getAnswers()
+                submissionRequest.getAnswers(),
+                true
         );
-
-        if (passed) {
-            return ResponseEntity.ok("Umefaulu! Umehamishiwa level inayofuata.");
-        } else {
-            return ResponseEntity.ok("Samahani, hujafaulu. Jaribu tena.");
-        }
+        return ResponseEntity.ok(result);
     }
 }
