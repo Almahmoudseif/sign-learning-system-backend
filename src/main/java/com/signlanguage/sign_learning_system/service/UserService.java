@@ -54,7 +54,6 @@ public class UserService {
         return Optional.empty();
     }
 
-
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -111,21 +110,18 @@ public class UserService {
         String reg;
         do {
             reg = "SL-" + (1000 + random.nextInt(9000));
-        } while (userRepository.findByRegistrationNumber(reg).isPresent()); // fix is here
+        } while (userRepository.findByRegistrationNumber(reg).isPresent());
         return reg;
     }
-
 
     private String generateTeacherRegistrationNumber() {
         Random random = new Random();
         String reg;
         do {
             reg = "T-" + (1000 + random.nextInt(9000));
-        } while (userRepository.findByRegistrationNumber(reg).isPresent()); // fix here
+        } while (userRepository.findByRegistrationNumber(reg).isPresent());
         return reg;
-
-
-}
+    }
 
     public TeacherProfileResponse getTeacherProfileById(Long id) {
         Optional<User> optionalUser = userRepository.findById(id);
@@ -145,5 +141,11 @@ public class UserService {
                 user.getEmail(),
                 user.getRegistrationNumber()
         );
+    }
+
+    // Hii ndio method mpya unayotaka:
+    public LessonLevel getUserLevel(Long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        return userOpt.map(User::getLevel).orElse(null);
     }
 }

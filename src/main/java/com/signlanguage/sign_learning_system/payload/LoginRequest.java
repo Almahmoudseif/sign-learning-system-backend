@@ -1,16 +1,8 @@
 package com.signlanguage.sign_learning_system.payload;
 
 public class LoginRequest {
-    private String fullName;
     private String registrationNumber;
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+    private String password;
 
     public String getRegistrationNumber() {
         return registrationNumber;
@@ -18,5 +10,13 @@ public class LoginRequest {
 
     public void setRegistrationNumber(String registrationNumber) {
         this.registrationNumber = registrationNumber;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

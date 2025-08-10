@@ -1,6 +1,6 @@
 package com.signlanguage.sign_learning_system.controller;
 
-import com.signlanguage.sign_learning_system.DTO.LoginRequest;
+import com.signlanguage.sign_learning_system.payload.LoginRequest;
 import com.signlanguage.sign_learning_system.DTO.LoginResponse;
 import com.signlanguage.sign_learning_system.DTO.RegisterTeacherRequest;
 import com.signlanguage.sign_learning_system.DTO.TeacherProfileResponse;
@@ -58,8 +58,10 @@ public class UserController {
                 user.getId(),
                 user.getRegistrationNumber(),
                 fullName,
-                user.getRole().toString()
+                user.getRole().toString(),
+                user.getLevel() != null ? user.getLevel().name() : null  // hii ni ile 5th param
         );
+
 
         return ResponseEntity.ok(response);
     }

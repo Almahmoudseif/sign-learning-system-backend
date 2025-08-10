@@ -2,7 +2,9 @@ package com.signlanguage.sign_learning_system.controller;
 
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import com.signlanguage.sign_learning_system.model.Lesson;
+import com.signlanguage.sign_learning_system.model.User;
 import com.signlanguage.sign_learning_system.service.LessonService;
+import com.signlanguage.sign_learning_system.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,9 @@ public class LessonController {
 
     @Autowired
     private LessonService lessonService;
+
+    @Autowired
+    private UserService userService;
 
     @Value("${upload.path}")
     private String uploadPath;
@@ -62,7 +67,23 @@ public class LessonController {
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 6. Delete lesson by ID
+    // 6. NEW: Get lessons by studentId (based on student's current level)
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<List<Lesson>> getLessonsByStudent(
+            @PathVariable Long studentId,
+            @RequestParam(required = false) LessonLevel level // Optional override
+    ) {
+        User student = userService.getUserById(studentId);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        LessonLevel targetLevel = (level != null) ? level : student.getLevel();
+        List<Lesson> lessons = lessonService.getLessonsByLevel(targetLevel);
+        return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
+    }
+
+    // 7. Delete lesson by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteLesson(@PathVariable Long id) {
         return lessonService.deleteLesson(id)
@@ -70,7 +91,7 @@ public class LessonController {
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lesson not found");
     }
 
-    // 7. Update lesson image
+    // 8. Update lesson image
     @PutMapping("/{id}/image")
     public ResponseEntity<Lesson> updateLessonImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
@@ -86,7 +107,7 @@ public class LessonController {
         }
     }
 
-    // 8. Create new lesson with optional image & video
+    // 9. Create new lesson with optional image & video
     @PostMapping
     public ResponseEntity<Lesson> createLesson(
             @RequestParam("title") String title,

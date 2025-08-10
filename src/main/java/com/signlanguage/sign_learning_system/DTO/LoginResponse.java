@@ -5,12 +5,14 @@ public class LoginResponse {
     private String registrationNumber;
     private String fullName;
     private String role;
+    private String level;
 
-    public LoginResponse(Long id, String registrationNumber, String fullName, String role) {
+    public LoginResponse(Long id, String registrationNumber, String fullName, String role, String level) {
         this.id = id;
         this.registrationNumber = registrationNumber;
         this.fullName = fullName;
         this.role = role;
+        this.level = level;
     }
 
     public Long getId() {
@@ -27,5 +29,9 @@ public class LoginResponse {
 
     public String getRole() {
         return role;
+    }
+
+    public String getLevel() {
+        return level;
     }
 }
