@@ -85,6 +85,18 @@ public class AssessmentController {
         return assessmentService.getAssessmentsForStudentLevel(studentId);
     }
 
+    // Endpoint ya assessments zote za student
+    @GetMapping("/student/all/{studentId}")
+    public ResponseEntity<List<Assessment>> getAllByStudent(@PathVariable Long studentId) {
+        return ResponseEntity.ok(assessmentService.getAssessmentsByStudentId(studentId));
+    }
+
+    // Endpoint ya assessments passed za student
+    @GetMapping("/student/passed/{studentId}")
+    public ResponseEntity<List<Assessment>> getPassedByStudent(@PathVariable Long studentId) {
+        return ResponseEntity.ok(assessmentService.getPassedAssessmentsByStudentId(studentId));
+    }
+
     // Submit assessment answers and auto-evaluate
     @PostMapping("/submit")
     public ResponseEntity<AssessmentResultResponse> submitAssessment(@RequestBody AssessmentSubmissionRequest submissionRequest) {

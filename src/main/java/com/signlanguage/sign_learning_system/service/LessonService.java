@@ -28,4 +28,6 @@ public interface LessonService {
     List<Lesson> getLessonsByTeacherId(Long teacherId);
 
     List<Lesson> getLessonsByLevelAndTeacherId(LessonLevel level, Long teacherId);
+    List<Lesson> getPassedLessonsByStudent(Long studentId);
+
 }

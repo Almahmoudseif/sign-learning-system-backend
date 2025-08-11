@@ -10,4 +10,8 @@ import java.util.List;
 @Repository
 public interface AssessmentRepository extends JpaRepository<Assessment, Long> {
     List<Assessment> findByLevel(LessonLevel level);
+
+    List<Assessment> findByStudent_Id(Long studentId);
+
+    List<Assessment> findByStudent_IdAndPassedTrue(Long studentId);
 }

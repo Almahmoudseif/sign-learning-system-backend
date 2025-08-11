@@ -158,6 +158,16 @@ public class AssessmentServiceImpl implements AssessmentService {
         );
     }
 
+    @Override
+    public List<Assessment> getAssessmentsByStudentId(Long studentId) {
+        return assessmentRepository.findByStudent_Id(studentId);
+    }
+
+    @Override
+    public List<Assessment> getPassedAssessmentsByStudentId(Long studentId) {
+        return assessmentRepository.findByStudent_IdAndPassedTrue(studentId);
+    }
+
     private void promoteStudentToNextLevel(User student) {
         LessonLevel currentLevel = student.getLevel();
         LessonLevel nextLevel = getNextLevel(currentLevel);

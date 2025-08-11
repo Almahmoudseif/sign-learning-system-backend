@@ -66,6 +66,8 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+
+
     @GetMapping("/teacher/{id}")
     public ResponseEntity<?> getTeacherProfile(@PathVariable Long id) {
         try {

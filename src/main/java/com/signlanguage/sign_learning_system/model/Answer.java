@@ -1,7 +1,7 @@
 package com.signlanguage.sign_learning_system.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "answers")
@@ -19,7 +19,7 @@ public class Answer {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "question-answers")
     private Question question;
 
     public Answer() {}
@@ -33,31 +33,24 @@ public class Answer {
     public Long getId() {
         return id;
     }
-
     public void setId(Long id) {
         this.id = id;
     }
-
     public String getContent() {
         return content;
     }
-
     public void setContent(String content) {
         this.content = content;
     }
-
     public boolean isCorrect() {
         return isCorrect;
     }
-
     public void setCorrect(boolean correct) {
         this.isCorrect = correct;
     }
-
     public Question getQuestion() {
         return question;
     }
-
     public void setQuestion(Question question) {
         this.question = question;
     }

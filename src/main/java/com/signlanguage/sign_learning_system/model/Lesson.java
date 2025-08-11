@@ -2,6 +2,9 @@ package com.signlanguage.sign_learning_system.model;
 
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import java.util.List;
 
 @Entity
 @Table(name = "lessons")
@@ -29,6 +32,10 @@ public class Lesson {
 
     @Column(name = "teacher_id")
     private Long teacherId;
+
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "lesson-assessments")
+    private List<Assessment> assessments;
 
     public Lesson() {}
 
@@ -61,4 +68,11 @@ public class Lesson {
 
     public Long getTeacherId() { return teacherId; }
     public void setTeacherId(Long teacherId) { this.teacherId = teacherId; }
+
+    public List<Assessment> getAssessments() {
+        return assessments;
+    }
+    public void setAssessments(List<Assessment> assessments) {
+        this.assessments = assessments;
+    }
 }

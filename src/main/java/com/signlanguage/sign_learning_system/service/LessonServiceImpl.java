@@ -1,7 +1,9 @@
 package com.signlanguage.sign_learning_system.service;
 
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
+import com.signlanguage.sign_learning_system.model.Assessment;
 import com.signlanguage.sign_learning_system.model.Lesson;
+import com.signlanguage.sign_learning_system.repository.AssessmentRepository;
 import com.signlanguage.sign_learning_system.repository.LessonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,9 @@ public class LessonServiceImpl implements LessonService {
 
     @Autowired
     private LessonRepository lessonRepository;
+
+    @Autowired
+    private AssessmentRepository assessmentRepository;
 
     @Override
     public Lesson saveLesson(Lesson lesson) {
@@ -73,4 +78,18 @@ public class LessonServiceImpl implements LessonService {
     public List<Lesson> getLessonsByLevelAndTeacherId(LessonLevel level, Long teacherId) {
         return lessonRepository.findByLevelAndTeacherId(level, teacherId);
     }
+
+    @Override
+    public List<Lesson> getPassedLessonsByStudent(Long studentId) {
+        List<Assessment> passedAssessments = assessmentRepository.findByStudent_IdAndPassedTrue(studentId);
+        if (passedAssessments.isEmpty()) {
+            return List.of();
+        }
+        List<Long> lessonIds = passedAssessments.stream()
+                .map(a -> a.getLesson().getId()) // Badala ya getLessonId()
+                .distinct()
+                .toList();
+        return lessonRepository.findAllById(lessonIds);
+    }
+
 }

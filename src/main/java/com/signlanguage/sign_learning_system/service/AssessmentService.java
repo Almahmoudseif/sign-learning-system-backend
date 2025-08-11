@@ -24,4 +24,10 @@ public interface AssessmentService {
     List<Assessment> getAssessmentsForStudentLevel(Long studentId);
 
     AssessmentResultResponse evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers, boolean promote);
+
+    // Method mpya ya kupata assessments zote za student
+    List<Assessment> getAssessmentsByStudentId(Long studentId);
+
+    // Method mpya ya kupata assessments zilizopitishwa za student
+    List<Assessment> getPassedAssessmentsByStudentId(Long studentId);
 }

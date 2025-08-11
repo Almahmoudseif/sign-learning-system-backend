@@ -53,32 +53,56 @@ public class LessonController {
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 4. Get lessons by level
+    // 4. Get lessons by level (safe conversion)
     @GetMapping("/level/{level}")
-    public ResponseEntity<List<Lesson>> getLessonsByLevel(@PathVariable LessonLevel level) {
-        List<Lesson> lessons = lessonService.getLessonsByLevel(level);
+    public ResponseEntity<List<Lesson>> getLessonsByLevel(@PathVariable String level) {
+        LessonLevel lessonLevel;
+        try {
+            lessonLevel = LessonLevel.fromString(level);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Lesson> lessons = lessonService.getLessonsByLevel(lessonLevel);
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 5. Get lessons by level and teacherId
+    // 5. Get lessons by level and teacherId (safe conversion)
     @GetMapping("/level/{level}/teacher/{teacherId}")
-    public ResponseEntity<List<Lesson>> getLessonsByLevelAndTeacherId(@PathVariable LessonLevel level, @PathVariable Long teacherId) {
-        List<Lesson> lessons = lessonService.getLessonsByLevelAndTeacherId(level, teacherId);
+    public ResponseEntity<List<Lesson>> getLessonsByLevelAndTeacherId(@PathVariable String level, @PathVariable Long teacherId) {
+        LessonLevel lessonLevel;
+        try {
+            lessonLevel = LessonLevel.fromString(level);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Lesson> lessons = lessonService.getLessonsByLevelAndTeacherId(lessonLevel, teacherId);
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 6. NEW: Get lessons by studentId (based on student's current level)
+    // 6. Get lessons by studentId (level optional, safe conversion)
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<Lesson>> getLessonsByStudent(
             @PathVariable Long studentId,
-            @RequestParam(required = false) LessonLevel level // Optional override
+            @RequestParam(required = false) String level // Accept as string
     ) {
         User student = userService.getUserById(studentId);
         if (student == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        LessonLevel targetLevel = (level != null) ? level : student.getLevel();
+        LessonLevel targetLevel;
+        if (level != null) {
+            try {
+                targetLevel = LessonLevel.fromString(level);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        } else {
+            targetLevel = student.getLevel();
+        }
+
         List<Lesson> lessons = lessonService.getLessonsByLevel(targetLevel);
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
@@ -107,16 +131,29 @@ public class LessonController {
         }
     }
 
-    // 9. Create new lesson with optional image & video
+    @GetMapping("/student/{studentId}/passed")
+    public ResponseEntity<List<Lesson>> getPassedLessons(@PathVariable Long studentId) {
+        List<Lesson> lessons = lessonService.getPassedLessonsByStudent(studentId);
+        return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
+    }
+
+    // 9. Create new lesson with optional image & video (safe conversion)
     @PostMapping
     public ResponseEntity<Lesson> createLesson(
             @RequestParam("title") String title,
             @RequestParam("description") String description,
-            @RequestParam("level") LessonLevel level,
+            @RequestParam("level") String levelStr,
             @RequestParam(value = "teacherId") Long teacherId,
             @RequestParam(value = "video", required = false) MultipartFile videoFile,
             @RequestParam(value = "image", required = false) MultipartFile imageFile
     ) {
+        LessonLevel level;
+        try {
+            level = LessonLevel.fromString(levelStr);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
         try {
             String videoFileName = null;
             String imageFileName = null;
