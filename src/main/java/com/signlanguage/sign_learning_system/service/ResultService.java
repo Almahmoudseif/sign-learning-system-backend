@@ -105,4 +105,9 @@ public class ResultService {
                 })
                 .collect(Collectors.toList());
     }
+
+    // 🔹 Mpya: kupata matokeo yote ya wanafunzi kwa mwalimu
+    public List<Result> getResultsByTeacher(Long teacherId) {
+        return resultRepository.findByAssessment_Teacher_Id(teacherId);
+    }
 }
