@@ -23,7 +23,17 @@ public interface AssessmentService {
 
     List<Assessment> getAssessmentsForStudentLevel(Long studentId);
 
-    AssessmentResultResponse evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers, boolean promote);
+    // Method mpya (Map<Long, Long>)
+    AssessmentResultResponse evaluateAndPromoteStudent(Long studentId,
+                                                       Long assessmentId,
+                                                       Map<Long, Long> answers,
+                                                       boolean promoteIfPass);
+
+    // Method ya zamani imebadilishwa jina
+    AssessmentResultResponse evaluateAndPromoteStudentLegacy(Long studentId,
+                                                             Long assessmentId,
+                                                             Map<Long, String> answers,
+                                                             boolean promote);
 
     // Method mpya ya kupata assessments zote za student
     List<Assessment> getAssessmentsByStudentId(Long studentId);

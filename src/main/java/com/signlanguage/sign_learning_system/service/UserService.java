@@ -4,10 +4,13 @@ import com.signlanguage.sign_learning_system.DTO.RegisterTeacherRequest;
 import com.signlanguage.sign_learning_system.DTO.TeacherProfileResponse;
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
 import com.signlanguage.sign_learning_system.model.User;
+import com.signlanguage.sign_learning_system.repository.AssessmentRepository;
+import com.signlanguage.sign_learning_system.repository.ResultRepository;
 import com.signlanguage.sign_learning_system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +22,12 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ResultRepository resultRepository;
+
+    @Autowired
+    private AssessmentRepository assessmentRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -63,14 +72,23 @@ public class UserService {
     }
 
     public List<User> getAllStudents() {
-        return userRepository.findByRole("student");
+        return userRepository.findByRole("STUDENT");
     }
 
     public User getUserById(Long id) {
         return userRepository.findById(id).orElse(null);
     }
 
+    // Delete user + data zake zote zinazomshawishi kwa foreign key
+    @Transactional
     public void deleteUserById(Long id) {
+        // 1. Futa matokeo yote ya student
+        resultRepository.deleteByStudent_Id(id);
+
+        // 2. Futa assessments zote za student
+        assessmentRepository.deleteByStudent_Id(id);
+
+        // 3. Futa user
         userRepository.deleteById(id);
     }
 
@@ -83,7 +101,9 @@ public class UserService {
         if (existingUser != null) {
             existingUser.setFullName(updatedUser.getFullName());
             existingUser.setEmail(updatedUser.getEmail());
-            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+            if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+                existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+            }
             existingUser.setRole(updatedUser.getRole());
             existingUser.setLevel(updatedUser.getLevel());
             return userRepository.save(existingUser);
@@ -92,7 +112,7 @@ public class UserService {
     }
 
     public List<User> assignLevelToStudentsWithoutLevel(LessonLevel defaultLevel) {
-        List<User> students = userRepository.findByRole("student");
+        List<User> students = userRepository.findByRole("STUDENT");
         List<User> updated = new ArrayList<>();
 
         for (User user : students) {
@@ -143,7 +163,6 @@ public class UserService {
         );
     }
 
-    // Hii ndio method mpya unayotaka:
     public LessonLevel getUserLevel(Long userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         return userOpt.map(User::getLevel).orElse(null);

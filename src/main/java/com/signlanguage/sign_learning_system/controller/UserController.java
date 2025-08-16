@@ -59,14 +59,11 @@ public class UserController {
                 user.getRegistrationNumber(),
                 fullName,
                 user.getRole().toString(),
-                user.getLevel() != null ? user.getLevel().name() : null  // hii ni ile 5th param
+                user.getLevel() != null ? user.getLevel().name() : null
         );
-
 
         return ResponseEntity.ok(response);
     }
-
-
 
     @GetMapping("/teacher/{id}")
     public ResponseEntity<?> getTeacherProfile(@PathVariable Long id) {
@@ -102,6 +99,16 @@ public class UserController {
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUserById(id);
         return "User deleted successfully";
+    }
+
+    // Hii ndio PUT endpoint mpya ya update user
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        User user = userService.updateUser(id, updatedUser);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
     }
 
     @PutMapping("/fix-students-level")

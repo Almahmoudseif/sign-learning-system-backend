@@ -1,5 +1,6 @@
 package com.signlanguage.sign_learning_system.controller;
 
+import com.signlanguage.sign_learning_system.DTO.PassedLessonDTO;
 import com.signlanguage.sign_learning_system.model.Result;
 import com.signlanguage.sign_learning_system.service.ResultService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/results")
+@CrossOrigin
 public class ResultController {
 
     @Autowired
@@ -50,5 +52,11 @@ public class ResultController {
     public String deleteResult(@PathVariable Long id) {
         resultService.deleteResult(id);
         return "Result with id " + id + " deleted successfully.";
+    }
+
+    // 🔹 Mpya: kupata lessons alizofaulu mwanafunzi
+    @GetMapping("/student/{studentId}/passed-lessons")
+    public List<PassedLessonDTO> getPassedLessons(@PathVariable Long studentId) {
+        return resultService.getPassedLessonsByStudent(studentId);
     }
 }

@@ -7,6 +7,7 @@ import com.signlanguage.sign_learning_system.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -24,6 +25,9 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Autowired
     private AnswerRepository answerRepository;
 
+    @Autowired
+    private ResultRepository resultRepository; // ✅ Mpya: kwa ajili ya kuhifadhi matokeo
+
     @Override
     public Assessment saveAssessment(Assessment assessment) {
         if (assessment == null || assessment.getTitle() == null || assessment.getTitle().trim().isEmpty()) {
@@ -33,7 +37,6 @@ public class AssessmentServiceImpl implements AssessmentService {
         if (assessment.getQuestions() != null) {
             for (Question q : assessment.getQuestions()) {
                 q.setAssessment(assessment);
-
                 if (q.getAnswers() != null) {
                     for (Answer a : q.getAnswers()) {
                         a.setQuestion(q);
@@ -89,8 +92,9 @@ public class AssessmentServiceImpl implements AssessmentService {
         return assessmentRepository.findByLevel(level);
     }
 
+    // ✅ Version mpya ya method (Map<Long, Long>)
     @Override
-    public AssessmentResultResponse evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, String> answers, boolean promote) {
+    public AssessmentResultResponse evaluateAndPromoteStudent(Long studentId, Long assessmentId, Map<Long, Long> answers, boolean promoteIfPass) {
         Optional<User> studentOpt = userRepository.findById(studentId);
         Optional<Assessment> assessmentOpt = assessmentRepository.findById(assessmentId);
 
@@ -98,64 +102,111 @@ public class AssessmentServiceImpl implements AssessmentService {
             return new AssessmentResultResponse("Assessment au mwanafunzi hakupatikana", 0, false);
         }
 
+        User student = studentOpt.get();
+        Assessment assessment = assessmentOpt.get();
+
         List<Question> questions = questionRepository.findByAssessmentId(assessmentId);
         if (questions.isEmpty()) {
             return new AssessmentResultResponse("Hakuna maswali kwenye assessment hii", 0, false);
-        }
-
-        // Hakikisha kila question ina jibu moja tu sahihi
-        for (Question q : questions) {
-            long correctCount = q.getAnswers().stream().filter(Answer::isCorrect).count();
-            if (correctCount != 1) {
-                return new AssessmentResultResponse("Swali '" + q.getContent() + "' linapaswa kuwa na jibu moja tu sahihi.", 0, false);
-            }
         }
 
         int totalQuestions = questions.size();
         int correctAnswers = 0;
 
         for (Question question : questions) {
-            String submittedAnswerIdStr = answers.get(question.getId());
-            if (submittedAnswerIdStr == null) {
-                return new AssessmentResultResponse("Tafadhali jibu swali: " + question.getContent(), (int) (((double) correctAnswers / totalQuestions) * 100), false);
+            Long submittedAnswerId = answers.get(question.getId());
+            if (submittedAnswerId == null) continue; // Swali halikujibiwa
+
+            Optional<Answer> correctAnswerOpt = answerRepository.findByQuestionIdAndIsCorrectTrue(question.getId());
+            if (correctAnswerOpt.isPresent() && correctAnswerOpt.get().getId().equals(submittedAnswerId)) {
+                correctAnswers++;
             }
+        }
+
+        int scorePercentage = (int) Math.round(((double) correctAnswers / totalQuestions) * 100);
+        boolean passed = scorePercentage >= 50;
+
+        String grade;
+        if (scorePercentage >= 80) grade = "A";
+        else if (scorePercentage >= 65) grade = "B";
+        else if (scorePercentage >= 50) grade = "C";
+        else grade = "F";
+
+        Result result = resultRepository.findByStudent_IdAndAssessment_Id(studentId, assessmentId)
+                .orElse(new Result());
+        result.setStudent(student);
+        result.setAssessment(assessment);
+        result.setScore(scorePercentage);
+        result.setGrade(grade);
+        result.setSubmittedAt(LocalDateTime.now());
+        resultRepository.save(result);
+
+        if (passed && promoteIfPass) promoteStudentToNextLevel(student);
+
+        String message = passed ? "Hongera! Umefaulu." : "Samahani, hujafaulu. Jaribu tena.";
+        return new AssessmentResultResponse(message, scorePercentage, passed);
+    }
+
+    // ✅ Version ya legacy (Map<Long, String>)
+    @Override
+    public AssessmentResultResponse evaluateAndPromoteStudentLegacy(Long studentId, Long assessmentId, Map<Long, String> answers, boolean promote) {
+        Optional<User> studentOpt = userRepository.findById(studentId);
+        Optional<Assessment> assessmentOpt = assessmentRepository.findById(assessmentId);
+
+        if (studentOpt.isEmpty() || assessmentOpt.isEmpty()) {
+            return new AssessmentResultResponse("Assessment au mwanafunzi hakupatikana", 0, false);
+        }
+
+        User student = studentOpt.get();
+        Assessment assessment = assessmentOpt.get();
+        List<Question> questions = questionRepository.findByAssessmentId(assessmentId);
+
+        if (questions.isEmpty()) {
+            return new AssessmentResultResponse("Hakuna maswali kwenye assessment hii", 0, false);
+        }
+
+        int totalQuestions = questions.size();
+        int correctAnswers = 0;
+
+        for (Question question : questions) {
+            String submittedAnswerStr = answers.get(question.getId());
+            if (submittedAnswerStr == null) continue;
+
             Long submittedAnswerId;
             try {
-                submittedAnswerId = Long.parseLong(submittedAnswerIdStr);
+                submittedAnswerId = Long.parseLong(submittedAnswerStr);
             } catch (NumberFormatException e) {
-                return new AssessmentResultResponse("Jibu la swali '" + question.getContent() + "' halieleweki", (int) (((double) correctAnswers / totalQuestions) * 100), false);
+                continue;
             }
 
             Optional<Answer> correctAnswerOpt = answerRepository.findByQuestionIdAndIsCorrectTrue(question.getId());
-
-            if (correctAnswerOpt.isEmpty()) {
-                return new AssessmentResultResponse("Hakuna jibu sahihi limewekwa kwa swali: " + question.getContent(), (int) (((double) correctAnswers / totalQuestions) * 100), false);
-            }
-
-            if (correctAnswerOpt.get().getId().equals(submittedAnswerId)) {
+            if (correctAnswerOpt.isPresent() && correctAnswerOpt.get().getId().equals(submittedAnswerId)) {
                 correctAnswers++;
-            } else {
-                return new AssessmentResultResponse(
-                        "Samahani, hujafaulu. Jaribu tena.",
-                        (int) (((double) correctAnswers / totalQuestions) * 100),
-                        false
-                );
             }
         }
 
-        // Ikiwa umefika hapa, maana majibu yote ni sahihi
-        double scorePercentage = 100;
-        boolean passed = true;
+        int scorePercentage = (int) Math.round(((double) correctAnswers / totalQuestions) * 100);
+        boolean passed = scorePercentage >= 50;
 
-        if (passed && promote) {
-            promoteStudentToNextLevel(studentOpt.get());
-        }
+        String grade;
+        if (scorePercentage >= 80) grade = "A";
+        else if (scorePercentage >= 65) grade = "B";
+        else if (scorePercentage >= 50) grade = "C";
+        else grade = "F";
 
-        return new AssessmentResultResponse(
-                "Hongera! Umeshinda na umehamishiwa daraja jingine.",
-                (int) scorePercentage,
-                true
-        );
+        Result result = resultRepository.findByStudent_IdAndAssessment_Id(studentId, assessmentId)
+                .orElse(new Result());
+        result.setStudent(student);
+        result.setAssessment(assessment);
+        result.setScore(scorePercentage);
+        result.setGrade(grade);
+        result.setSubmittedAt(LocalDateTime.now());
+        resultRepository.save(result);
+
+        if (passed && promote) promoteStudentToNextLevel(student);
+
+        String message = passed ? "Hongera! Umefaulu." : "Samahani, hujafaulu. Jaribu tena.";
+        return new AssessmentResultResponse(message, scorePercentage, passed);
     }
 
     @Override
@@ -176,9 +227,7 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     private LessonLevel getNextLevel(LessonLevel currentLevel) {
-        if (currentLevel == null) {
-            return LessonLevel.BEGINNER;
-        }
+        if (currentLevel == null) return LessonLevel.BEGINNER;
         return switch (currentLevel) {
             case BEGINNER -> LessonLevel.INTERMEDIATE;
             case INTERMEDIATE -> LessonLevel.ADVANCED;

@@ -33,27 +33,23 @@ public class LessonController {
     private final String BASE_IMAGE_URL = "http://192.168.43.33:8080/uploads/images/";
     private final String BASE_VIDEO_URL = "http://192.168.43.33:8080/uploads/videos/";
 
-    // 1. Get all lessons
     @GetMapping
     public List<Lesson> getAllLessons() {
         return lessonService.getAllLessons();
     }
 
-    // 2. Get lesson by ID
     @GetMapping("/{id}")
     public ResponseEntity<Lesson> getLessonById(@PathVariable Long id) {
         Lesson lesson = lessonService.getLessonById(id);
         return lesson != null ? ResponseEntity.ok(lesson) : ResponseEntity.notFound().build();
     }
 
-    // 3. Get all lessons by teacherId
     @GetMapping("/teacher/{teacherId}")
     public ResponseEntity<List<Lesson>> getLessonsByTeacher(@PathVariable Long teacherId) {
         List<Lesson> lessons = lessonService.getLessonsByTeacherId(teacherId);
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 4. Get lessons by level (safe conversion)
     @GetMapping("/level/{level}")
     public ResponseEntity<List<Lesson>> getLessonsByLevel(@PathVariable String level) {
         LessonLevel lessonLevel;
@@ -62,12 +58,10 @@ public class LessonController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
-
         List<Lesson> lessons = lessonService.getLessonsByLevel(lessonLevel);
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 5. Get lessons by level and teacherId (safe conversion)
     @GetMapping("/level/{level}/teacher/{teacherId}")
     public ResponseEntity<List<Lesson>> getLessonsByLevelAndTeacherId(@PathVariable String level, @PathVariable Long teacherId) {
         LessonLevel lessonLevel;
@@ -76,21 +70,14 @@ public class LessonController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
-
         List<Lesson> lessons = lessonService.getLessonsByLevelAndTeacherId(lessonLevel, teacherId);
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 6. Get lessons by studentId (level optional, safe conversion)
     @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<Lesson>> getLessonsByStudent(
-            @PathVariable Long studentId,
-            @RequestParam(required = false) String level // Accept as string
-    ) {
+    public ResponseEntity<List<Lesson>> getLessonsByStudent(@PathVariable Long studentId, @RequestParam(required = false) String level) {
         User student = userService.getUserById(studentId);
-        if (student == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        if (student == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
         LessonLevel targetLevel;
         if (level != null) {
@@ -107,7 +94,6 @@ public class LessonController {
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 7. Delete lesson by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteLesson(@PathVariable Long id) {
         return lessonService.deleteLesson(id)
@@ -115,7 +101,6 @@ public class LessonController {
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lesson not found");
     }
 
-    // 8. Update lesson image
     @PutMapping("/{id}/image")
     public ResponseEntity<Lesson> updateLessonImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
@@ -137,7 +122,6 @@ public class LessonController {
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
-    // 9. Create new lesson with optional image & video (safe conversion)
     @PostMapping
     public ResponseEntity<Lesson> createLesson(
             @RequestParam("title") String title,
@@ -187,4 +171,50 @@ public class LessonController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Lesson> updateLesson(
+            @PathVariable Long id,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("lessonType") String lessonType,
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestParam(value = "video", required = false) MultipartFile videoFile
+    ) {
+        Lesson lesson = lessonService.getLessonById(id);
+        if (lesson == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        lesson.setTitle(title);
+        lesson.setDescription(description);
+        lesson.setLessonType(lessonType);
+
+        try {
+            if (imageFile != null && !imageFile.isEmpty()) {
+                String imageFileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+                File imageDest = new File(uploadPath + File.separator + "images", imageFileName);
+                imageDest.getParentFile().mkdirs();
+                imageFile.transferTo(imageDest);
+                lesson.setImageUrl(BASE_IMAGE_URL + imageFileName);
+                lesson.setVideoUrl(null);
+            }
+
+            if (videoFile != null && !videoFile.isEmpty()) {
+                String videoFileName = UUID.randomUUID() + "_" + videoFile.getOriginalFilename();
+                File videoDest = new File(uploadPath + File.separator + "videos", videoFileName);
+                videoDest.getParentFile().mkdirs();
+                videoFile.transferTo(videoDest);
+                lesson.setVideoUrl(BASE_VIDEO_URL + videoFileName);
+                lesson.setImageUrl(null);
+            }
+
+            Lesson updatedLesson = lessonService.saveLesson(lesson);
+            return ResponseEntity.ok(updatedLesson);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }
