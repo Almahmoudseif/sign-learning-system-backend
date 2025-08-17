@@ -1,3 +1,4 @@
+// Hii ni controller yako nzima, ikijumuisha endpoint mpya ya upload video pekee
 package com.signlanguage.sign_learning_system.controller;
 
 import com.signlanguage.sign_learning_system.enums.LessonLevel;
@@ -16,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/lessons")
@@ -36,6 +38,18 @@ public class LessonController {
     @GetMapping
     public List<Lesson> getAllLessons() {
         return lessonService.getAllLessons();
+    }
+
+    @GetMapping("/videos")
+    public ResponseEntity<List<Lesson>> getAllLessonsWithVideos() {
+        List<Lesson> lessons = lessonService.getAllLessons();
+        List<Lesson> videoLessons = lessons.stream()
+                .filter(lesson -> lesson.getVideoUrl() != null && !lesson.getVideoUrl().isEmpty())
+                .collect(Collectors.toList());
+
+        return videoLessons.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(videoLessons);
     }
 
     @GetMapping("/{id}")
@@ -94,32 +108,17 @@ public class LessonController {
         return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
+    @GetMapping("/student/{studentId}/passed")
+    public ResponseEntity<List<Lesson>> getPassedLessons(@PathVariable Long studentId) {
+        List<Lesson> lessons = lessonService.getPassedLessonsByStudent(studentId);
+        return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteLesson(@PathVariable Long id) {
         return lessonService.deleteLesson(id)
                 ? ResponseEntity.ok().build()
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lesson not found");
-    }
-
-    @PutMapping("/{id}/image")
-    public ResponseEntity<Lesson> updateLessonImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-        try {
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            File imageDest = new File(uploadPath + File.separator + "images", fileName);
-            imageDest.getParentFile().mkdirs();
-            file.transferTo(imageDest);
-
-            Lesson updatedLesson = lessonService.updateLessonImage(id, BASE_IMAGE_URL + fileName);
-            return updatedLesson != null ? ResponseEntity.ok(updatedLesson) : ResponseEntity.notFound().build();
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/student/{studentId}/passed")
-    public ResponseEntity<List<Lesson>> getPassedLessons(@PathVariable Long studentId) {
-        List<Lesson> lessons = lessonService.getPassedLessonsByStudent(studentId);
-        return lessons.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(lessons);
     }
 
     @PostMapping
@@ -163,6 +162,48 @@ public class LessonController {
             lesson.setTeacherId(teacherId);
             lesson.setVideoUrl(videoFileName != null ? BASE_VIDEO_URL + videoFileName : null);
             lesson.setImageUrl(imageFileName != null ? BASE_IMAGE_URL + imageFileName : null);
+
+            Lesson savedLesson = lessonService.saveLesson(lesson);
+            return new ResponseEntity<>(savedLesson, HttpStatus.CREATED);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 🔥 Endpoint mpya: Upload video pekee
+    @PostMapping("/upload/video")
+    public ResponseEntity<Lesson> uploadVideoOnly(
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("level") String levelStr,
+            @RequestParam("teacherId") Long teacherId,
+            @RequestParam("video") MultipartFile videoFile
+    ) {
+        LessonLevel level;
+        try {
+            level = LessonLevel.fromString(levelStr);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (videoFile == null || videoFile.isEmpty()) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
+        try {
+            String videoFileName = UUID.randomUUID() + "_" + videoFile.getOriginalFilename();
+            File videoDest = new File(uploadPath + File.separator + "videos", videoFileName);
+            videoDest.getParentFile().mkdirs();
+            videoFile.transferTo(videoDest);
+
+            Lesson lesson = new Lesson();
+            lesson.setTitle(title);
+            lesson.setDescription(description);
+            lesson.setLevel(level);
+            lesson.setTeacherId(teacherId);
+            lesson.setVideoUrl(BASE_VIDEO_URL + videoFileName);
+            lesson.setImageUrl(null); // optional: clear image since it's video only
 
             Lesson savedLesson = lessonService.saveLesson(lesson);
             return new ResponseEntity<>(savedLesson, HttpStatus.CREATED);
@@ -217,4 +258,38 @@ public class LessonController {
         }
     }
 
+    @PutMapping("/{id}/image")
+    public ResponseEntity<Lesson> updateLessonImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        try {
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            File imageDest = new File(uploadPath + File.separator + "images", fileName);
+            imageDest.getParentFile().mkdirs();
+            file.transferTo(imageDest);
+
+            Lesson updatedLesson = lessonService.updateLessonImage(id, BASE_IMAGE_URL + fileName);
+            return updatedLesson != null ? ResponseEntity.ok(updatedLesson) : ResponseEntity.notFound().build();
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{id}/video")
+    public ResponseEntity<Lesson> updateLessonVideo(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        try {
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            File videoDest = new File(uploadPath + File.separator + "videos", fileName);
+            videoDest.getParentFile().mkdirs();
+            file.transferTo(videoDest);
+
+            Lesson lesson = lessonService.getLessonById(id);
+            if (lesson == null) return ResponseEntity.notFound().build();
+
+            lesson.setVideoUrl(BASE_VIDEO_URL + fileName);
+            lesson.setImageUrl(null); // optional: clear image if uploading video
+            Lesson updatedLesson = lessonService.saveLesson(lesson);
+            return ResponseEntity.ok(updatedLesson);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
