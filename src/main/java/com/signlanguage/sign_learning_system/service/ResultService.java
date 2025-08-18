@@ -84,12 +84,12 @@ public class ResultService {
         return resultRepository.save(result);
     }
 
-    // Passed lessons (historia)
+    // 🔹 Passed lessons (historia)
     public List<PassedLessonDTO> getPassedLessonsByStudent(Long studentId) {
         List<Result> results = resultRepository.findByStudent_Id(studentId);
 
         return results.stream()
-                .filter(result -> result.getScore() >= 50) // kizingiti cha kufaulu (badilisha ukitaka)
+                .filter(result -> result.getScore() >= 50) // kizingiti cha kufaulu
                 .map(result -> {
                     var lesson = result.getAssessment().getLesson();
                     return new PassedLessonDTO(
@@ -97,7 +97,7 @@ public class ResultService {
                             lesson.getTitle(),
                             lesson.getLevel() != null ? lesson.getLevel().name() : null,
                             lesson.getLessonType(),
-                            lesson.getContentUrl(),
+                            lesson.getContentUrl(), // video/image/text
                             result.getScore(),
                             result.getGrade(),
                             result.getSubmittedAt()
