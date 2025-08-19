@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Result {
 
     @Id
@@ -15,62 +16,32 @@ public class Result {
     private String grade;
     private LocalDateTime submittedAt;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")
-    @JsonIgnoreProperties("results") // prevent infinite loop
+    @JsonIgnoreProperties({"results", "hibernateLazyInitializer", "handler"})
     private User student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assessment_id")
-    @JsonIgnoreProperties("results") // prevent infinite loop
+    @JsonIgnoreProperties({"results", "hibernateLazyInitializer", "handler"})
     private Assessment assessment;
 
     // Getters and setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public double getScore() { return score; }
+    public void setScore(double score) { this.score = score; }
 
-    public double getScore() {
-        return score;
-    }
+    public String getGrade() { return grade; }
+    public void setGrade(String grade) { this.grade = grade; }
 
-    public void setScore(double score) {
-        this.score = score;
-    }
+    public LocalDateTime getSubmittedAt() { return submittedAt; }
+    public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
 
-    public String getGrade() {
-        return grade;
-    }
+    public User getStudent() { return student; }
+    public void setStudent(User student) { this.student = student; }
 
-    public void setGrade(String grade) {
-        this.grade = grade;
-    }
-
-    public LocalDateTime getSubmittedAt() {
-        return submittedAt;
-    }
-
-    public void setSubmittedAt(LocalDateTime submittedAt) {
-        this.submittedAt = submittedAt;
-    }
-
-    public User getStudent() {
-        return student;
-    }
-
-    public void setStudent(User student) {
-        this.student = student;
-    }
-
-    public Assessment getAssessment() {
-        return assessment;
-    }
-
-    public void setAssessment(Assessment assessment) {
-        this.assessment = assessment;
-    }
+    public Assessment getAssessment() { return assessment; }
+    public void setAssessment(Assessment assessment) { this.assessment = assessment; }
 }

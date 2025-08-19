@@ -59,10 +59,4 @@ public class ResultController {
     public List<PassedLessonDTO> getPassedLessons(@PathVariable Long studentId) {
         return resultService.getPassedLessonsByStudent(studentId);
     }
-
-    // 🔹 Mpya: kupata matokeo yote ya wanafunzi kwa mwalimu
-    @GetMapping("/teacher/{teacherId}")
-    public List<Result> getResultsByTeacher(@PathVariable Long teacherId) {
-        return resultService.getResultsByTeacher(teacherId);
-    }
 }
